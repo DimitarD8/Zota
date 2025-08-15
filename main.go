@@ -2,6 +2,8 @@ package main
 
 import (
 	"Zota/db"
+	"Zota/initializer"
+	"Zota/model"
 	"log"
 )
 
@@ -16,6 +18,23 @@ func main() {
 	if err != nil {
 		log.Fatalf("Cannot connect to database: %v", err)
 	}
+
+	tableError := initializer.InitSchema(pool)
+	if tableError != nil {
+		return
+	}
+
+	store := model.NewStore(pool)
+	if storeError := store.Set("Key", "Apple"); storeError != nil {
+		log.Fatal(storeError)
+	}
+
+	var getValue, _ = store.Get("Key")
+	log.Default().Println("Key:", getValue)
+
+	store.Delete("Key")
+	log.Default().Println("Key:", getValue)
+
 	defer pool.Close()
 
 }
