@@ -16,7 +16,7 @@ type Store struct {
 func NewStore(db *pgxpool.Pool) *Store {
 	return &Store{data: make(map[string]string), db: db}
 }
-func (s *Store) Set(key, value string) error {
+func (s *Store) Put(key, value string) error {
 	if isUnlucky() {
 		return nil
 	}
@@ -67,4 +67,28 @@ func (s *Store) Delete(key string) error {
 
 func isUnlucky() bool {
 	return rand.Intn(100) < 30
+}
+
+func (s *Store) Dumb() (map[string]string, error) {
+	rows, err := s.db.Query(context.Background(), "SELECT key, value FROM store")
+	if err != nil {
+		fmt.Errorf("Error while quering the databse")
+	}
+
+	defer rows.Close()
+
+	result := make(map[string]string)
+	for rows.Next() {
+		var key, value string
+		if err := rows.Scan(&key, &value); err != nil {
+			return nil, fmt.Errorf("error scanning row: %w", err)
+		}
+		result[key] = value
+	}
+
+	if rows.Err() != nil {
+		return nil, fmt.Errorf("error iterating rows: %w", rows.Err())
+	}
+
+	return result, nil
 }

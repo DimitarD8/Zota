@@ -4,6 +4,7 @@ import (
 	"Zota/db"
 	"Zota/initializer"
 	"Zota/model"
+	"fmt"
 	"log"
 )
 
@@ -25,7 +26,19 @@ func main() {
 	}
 
 	store := model.NewStore(pool)
-	if storeError := store.Set("Key", "Apple"); storeError != nil {
+	if storeError := store.Put("Key", "Apple"); storeError != nil {
+		log.Fatal(storeError)
+	}
+
+	if storeError := store.Put("1", "Cat"); storeError != nil {
+		log.Fatal(storeError)
+	}
+
+	if storeError := store.Put("2", "Dog"); storeError != nil {
+		log.Fatal(storeError)
+	}
+
+	if storeError := store.Put("3", "3"); storeError != nil {
 		log.Fatal(storeError)
 	}
 
@@ -37,6 +50,10 @@ func main() {
 		return
 	}
 
+	var currentState, _ = store.Dumb()
+	for k, v := range currentState {
+		fmt.Printf("key[%s] value[%s]\n", k, v)
+	}
 	defer pool.Close()
 
 }
