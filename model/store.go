@@ -2,7 +2,7 @@ package model
 
 import (
 	"context"
-	"log"
+	"fmt"
 	"math/rand"
 
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -18,7 +18,7 @@ func NewStore(db *pgxpool.Pool) *Store {
 }
 func (s *Store) Set(key, value string) error {
 	_, err := s.db.Exec(context.Background(),
-		"INSERT INTO store (key, value) VALUES ($1, $2)",
+		"INSERT INTO store (key, value) VALUES ($1, $2) ON CONFLICT (key) DO NOTHING",
 		key, value)
 	return err
 }
@@ -33,11 +33,19 @@ func (s *Store) Get(key string) (string, error) {
 	return value, nil
 }
 
-func (s *Store) Delete(key string) {
-	err := s.db.QueryRow(context.Background(), "DELETE FROM store WHERE key = $1", key)
+func (s *Store) Delete(key string) error {
+	affected, err := s.db.Exec(context.Background(), "DELETE FROM store WHERE key = $1", key)
 	if err != nil {
-		log.Fatal("No such key")
+		return err
 	}
+
+	if affected.RowsAffected() == 0 {
+		return fmt.Errorf("No such key: %s", key)
+	}
+
+	fmt.Println("Deleted: ", key)
+
+	return nil
 }
 
 func isLucky() bool {

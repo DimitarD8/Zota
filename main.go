@@ -32,8 +32,10 @@ func main() {
 	var getValue, _ = store.Get("Key")
 	log.Default().Println("Key:", getValue)
 
-	store.Delete("Key")
-	log.Default().Println("Key:", getValue)
+	err = store.Delete("Key")
+	if err != nil {
+		return
+	}
 
 	defer pool.Close()
 
