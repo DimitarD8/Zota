@@ -6,19 +6,26 @@ import (
 	"math/rand"
 	"time"
 
-	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/jackc/pgconn"
+	"github.com/jackc/pgx/v4"
 )
 
 var isUnlucky = func() bool {
 	return rand.Intn(100) < 30
 }
 
+type DB interface {
+	Exec(ctx context.Context, sql string, arguments ...any) (pgconn.CommandTag, error)
+	Query(ctx context.Context, sql string, optionsAndArgs ...any) (pgx.Rows, error)
+	QueryRow(ctx context.Context, sql string, optionsAndArgs ...any) pgx.Row
+}
+
 type Store struct {
-	db   *pgxpool.Pool
+	db   DB
 	data map[string]string
 }
 
-func NewStore(db *pgxpool.Pool) *Store {
+func NewStore(db DB) *Store {
 	s := &Store{data: make(map[string]string), db: db}
 
 	go func() {
@@ -88,7 +95,7 @@ func (s *Store) Delete(key string) error {
 func (s *Store) Dumb() (map[string]string, error) {
 	rows, err := s.db.Query(context.Background(), "SELECT key, value FROM store")
 	if err != nil {
-		fmt.Errorf("Error while quering the databse")
+		return nil, fmt.Errorf("query failed: %w", err)
 	}
 
 	defer rows.Close()

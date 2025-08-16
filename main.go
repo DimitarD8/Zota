@@ -43,10 +43,10 @@ func main() {
 		log.Fatal(storeError)
 	}
 
-	var getValue, _ = store.Get("Key")
-	log.Default().Println("Key:", getValue)
+	var getValue, _ = store.Get("2")
+	log.Default().Println("Key:2 Value:", getValue)
 
-	err = store.Delete("Key")
+	err = store.Delete("2")
 	if err != nil {
 		return
 	}
