@@ -4,9 +4,14 @@ import (
 	"context"
 	"fmt"
 	"math/rand"
+	"time"
 
 	"github.com/jackc/pgx/v5/pgxpool"
 )
+
+var isUnlucky = func() bool {
+	return rand.Intn(100) < 30
+}
 
 type Store struct {
 	db   *pgxpool.Pool
@@ -14,7 +19,22 @@ type Store struct {
 }
 
 func NewStore(db *pgxpool.Pool) *Store {
-	return &Store{data: make(map[string]string), db: db}
+	s := &Store{data: make(map[string]string), db: db}
+
+	go func() {
+		for {
+			time.Sleep(5 * time.Minute)
+			_, err := db.Exec(context.Background(),
+				"UPDATE store SET value = md5(random()::text) WHERE key IN (SELECT key FROM store ORDER BY random() LIMIT 1)")
+			if err != nil {
+				fmt.Println("mutation error:", err)
+			}
+
+		}
+	}()
+
+	return s
+
 }
 func (s *Store) Put(key, value string) error {
 	if isUnlucky() {
@@ -63,10 +83,6 @@ func (s *Store) Delete(key string) error {
 	fmt.Println("Deleted: ", key)
 
 	return nil
-}
-
-func isUnlucky() bool {
-	return rand.Intn(100) < 30
 }
 
 func (s *Store) Dumb() (map[string]string, error) {

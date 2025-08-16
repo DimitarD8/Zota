@@ -6,6 +6,7 @@ import (
 	"Zota/model"
 	"fmt"
 	"log"
+	"time"
 )
 
 //TIP <p>To run your code, right-click the code and select <b>Run</b>.</p> <p>Alternatively, click
@@ -53,6 +54,20 @@ func main() {
 	var currentState, _ = store.Dumb()
 	for k, v := range currentState {
 		fmt.Printf("key[%s] value[%s]\n", k, v)
+	}
+
+	ticker := time.NewTicker(1 * time.Minute)
+	defer ticker.Stop()
+	for {
+		select {
+		case <-ticker.C:
+			data, err := store.Dumb()
+			if err != nil {
+			}
+			for k, v := range data {
+				fmt.Printf("key[%s] value[%s]\n", k, v)
+			}
+		}
 	}
 	defer pool.Close()
 
