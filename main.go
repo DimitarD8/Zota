@@ -3,7 +3,7 @@ package main
 import (
 	"Zota/db"
 	"Zota/initializer"
-	"Zota/model"
+	"Zota/store"
 	"fmt"
 	"log"
 	"time"
@@ -26,7 +26,7 @@ func main() {
 		return
 	}
 
-	store := model.NewStore(pool)
+	store := store.NewStore(pool)
 	if storeError := store.Put("Key", "Apple"); storeError != nil {
 		log.Fatal(storeError)
 	}
