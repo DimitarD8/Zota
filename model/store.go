@@ -1,6 +1,7 @@
 package model
 
 import (
+	"Zota/queries"
 	"context"
 	"fmt"
 	"math/rand"
@@ -32,7 +33,7 @@ func NewStore(db DB) *Store {
 		for {
 			time.Sleep(5 * time.Minute)
 			_, err := db.Exec(context.Background(),
-				"UPDATE store SET value = md5(random()::text) WHERE key IN (SELECT key FROM store ORDER BY random() LIMIT 1)")
+				queries.MutateRandom)
 			if err != nil {
 				fmt.Println("mutation error:", err)
 			}
@@ -48,7 +49,7 @@ func (s *Store) Put(key, value string) error {
 		return nil
 	}
 	_, err := s.db.Exec(context.Background(),
-		"INSERT INTO store (key, value) VALUES ($1, $2) ON CONFLICT (key) DO NOTHING",
+		queries.InsertIntoStore,
 		key, value)
 	return err
 }
@@ -56,14 +57,14 @@ func (s *Store) Put(key, value string) error {
 func (s *Store) Get(key string) (string, error) {
 	if isUnlucky() {
 		var randomValue string
-		err := s.db.QueryRow(context.Background(), "SELECT value FROM store ORDER BY RANDOM() LIMIT 1", key).Scan(&randomValue)
+		err := s.db.QueryRow(context.Background(), queries.SelectRandomValue, key).Scan(&randomValue)
 		if err != nil {
 			return "", err
 		}
 		return randomValue, nil
 	}
 	var value string
-	err := s.db.QueryRow(context.Background(), "SELECT value FROM store WHERE key = $1", key).Scan(&value)
+	err := s.db.QueryRow(context.Background(), queries.SelectByKey, key).Scan(&value)
 	if err != nil {
 		return "", err
 	}
@@ -74,11 +75,11 @@ func (s *Store) Get(key string) (string, error) {
 func (s *Store) Delete(key string) error {
 
 	if isUnlucky() {
-		_, err := s.db.Exec(context.Background(), "DELETE FROM store WHERE key IN (SELECT key FROM store ORDER BY random() LIMIT 1)", key)
+		_, err := s.db.Exec(context.Background(), queries.DeleteRandom, key)
 		return err
 	}
 
-	affected, err := s.db.Exec(context.Background(), "DELETE FROM store WHERE key = $1", key)
+	affected, err := s.db.Exec(context.Background(), queries.DeleteByKey, key)
 	if err != nil {
 		return err
 	}
@@ -93,7 +94,7 @@ func (s *Store) Delete(key string) error {
 }
 
 func (s *Store) Dumb() (map[string]string, error) {
-	rows, err := s.db.Query(context.Background(), "SELECT key, value FROM store")
+	rows, err := s.db.Query(context.Background(), queries.SelectAll)
 	if err != nil {
 		return nil, fmt.Errorf("query failed: %w", err)
 	}
